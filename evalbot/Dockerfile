@@ -12,9 +12,11 @@ RUN pip install --upgrade pip && \
 # Copy the project files into the container
 COPY . /app
 
-RUN poetry install --no-root
+# Install project dependencies and the package itself
+RUN poetry install
+
 # Expose the port that the MCP server will run on
 EXPOSE 8000
 
-# Run the MCP server
-CMD ["poetry", "run", "python3", "server.py"]
+# Run the MCP server using the entry point script defined in pyproject.toml
+CMD ["poetry", "run", "mcp-server-evalbot", "--transport", "streamable-http"]

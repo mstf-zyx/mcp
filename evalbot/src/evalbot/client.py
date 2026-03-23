@@ -59,17 +59,21 @@ class EvalbotClient:
         self._logger = logging.getLogger(__name__)
         self._logger.setLevel(logging.INFO)
 
+    def _get_token(self, override_token: Optional[str] = None) -> str:
+        """获取 token，优先使用传入的 token，否则使用配置中的 token"""
+        return override_token or self.__config.user_access_token
+
     @evalbot_api_call
-    def get_evaluate_ids(self, id_type: EvaluateIDType, id_key: str) -> GetEvaluateIDsResp:
+    def get_evaluate_ids(self, id_type: EvaluateIDType, id_key: str, token: Optional[str] = None) -> GetEvaluateIDsResp:
         url = f"https://evalbot.zijieapi.com/evaluate/get_ids?id_type={id_type.value}&id_key={id_key}"
-        response = rq.get(url, headers={"Authorization": f"Bearer {self.__config.user_access_token}"}).json()
+        response = rq.get(url, headers={"Authorization": f"Bearer {self._get_token(token)}"}).json()
         return GetEvaluateIDsResp(**response)
 
     @evalbot_api_call
-    def ability_trigger(self, req: AbilityTriggerReq) -> AbilityTriggerResp:
+    def ability_trigger(self, req: AbilityTriggerReq, token: Optional[str] = None) -> AbilityTriggerResp:
         response = AbilityTriggerResp()
         with rq.post("https://evalbot.zijieapi.com/evaluate/ability/trigger",
-                     headers={"Authorization": f"Bearer {self.__config.user_access_token}"},
+                     headers={"Authorization": f"Bearer {self._get_token(token)}"},
                      json=req.model_dump(),
                      stream=True) as resp:
             response.base = BaseResp(ret=0, error_msg="", log_id=resp.headers.get("Trace_id", ""))
@@ -83,10 +87,10 @@ class EvalbotClient:
         return response
 
     @evalbot_api_call
-    def plugin_trigger(self, req: PluginTriggerReq) -> PluginTriggerResp:
+    def plugin_trigger(self, req: PluginTriggerReq, token: Optional[str] = None) -> PluginTriggerResp:
         response = PluginTriggerResp()
         with rq.post("https://evalbot.zijieapi.com/evaluate/plugin/trigger",
-                     headers={"Authorization": f"Bearer {self.__config.user_access_token}"},
+                     headers={"Authorization": f"Bearer {self._get_token(token)}"},
                      json=req.model_dump(),
                      stream=True) as resp:
             response.base = BaseResp(ret=0, error_msg="", log_id=resp.headers.get("Trace_id", ""))

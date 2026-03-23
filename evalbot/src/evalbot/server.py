@@ -6,7 +6,8 @@ import logging
 import os
 
 from typing import List, Optional
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP, Context
+from starlette.requests import Request
 
 from .config import load_config
 from .client import EvalbotClient
@@ -20,13 +21,25 @@ evalbot_client: Optional[EvalbotClient] = None
 
 server = FastMCP(
     "Evalbot-Server",
-    host=os.getenv("MCP_SERVER_HOST", "127.0.0.1"),
+    host=os.getenv("MCP_SERVER_HOST", "0.0.0.0"),
     port=int(os.getenv("MCP_SERVER_PORT", "8000")),
 )
 
 
+def get_token_from_context(ctx: Context) -> Optional[str]:
+    """从请求上下文中获取 token，优先使用请求头中的 Authorization"""
+    try:
+        if ctx.request_context.request and isinstance(ctx.request_context.request, Request):
+            auth_header = ctx.request_context.request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                return auth_header[7:]  # 去掉 "Bearer " 前缀
+    except Exception:
+        pass
+    return None
+
+
 @server.tool(name="data_generation")
-async def data_generation(generate_type: str, params: dict[str, str]) -> Optional[str | List[str]]:
+async def data_generation(generate_type: str, params: dict[str, str], ctx: Context) -> Optional[str | List[str]]:
     """Generate Data
 
     Args:
@@ -37,8 +50,13 @@ async def data_generation(generate_type: str, params: dict[str, str]) -> Optiona
     Returns:
         Optional[str | List[str]]: The error info or the generated data list
     """
+    # 获取 token：优先从请求头获取，否则使用启动时传入的兜底 token
+    token = get_token_from_context(ctx) or config.user_access_token
+    if not token:
+        return "Authorization token is required"
+
     # 根据 generate_type 获取插件 ID
-    id_resp = evalbot_client.get_evaluate_ids(EvaluateIDType.PLUGIN, generate_type)
+    id_resp = evalbot_client.get_evaluate_ids(EvaluateIDType.PLUGIN, generate_type, token)
     if not id_resp or not id_resp.data:
         return "Invalid generate type"
     # 兜底转换参数名称格式
@@ -48,14 +66,14 @@ async def data_generation(generate_type: str, params: dict[str, str]) -> Optiona
         resolve_params[new_k] = v
     # 获取结果
     quantity = min(10, int(params.get("top_n", "1")))
-    resp = evalbot_client.plugin_trigger(PluginTriggerReq(id=id_resp.data[0], params=resolve_params, quantity=quantity))
+    resp = evalbot_client.plugin_trigger(PluginTriggerReq(id=id_resp.data[0], params=resolve_params, quantity=quantity), token)
     if not resp:
         return "Failed to generate data"
     return [data.data for data in resp.data if data.event == TriggerDataEvent.MESSAGE and data.data]
 
 
 @server.tool(name="model_evaluation")
-async def model_evaluation(evaluate_type: str, params: dict[str, str]) -> Optional[str | AbilityTriggerRespData]:
+async def model_evaluation(evaluate_type: str, params: dict[str, str], ctx: Context) -> Optional[str | AbilityTriggerRespData]:
     """Evaluate Model
 
     Args:
@@ -81,8 +99,13 @@ async def model_evaluation(evaluate_type: str, params: dict[str, str]) -> Option
     Returns:
         Optional[str | AbilityTriggerRespData]: The error info or the result for the model evaluation.
     """
+    # 获取 token：优先从请求头获取，否则使用启动时传入的兜底 token
+    token = get_token_from_context(ctx) or config.user_access_token
+    if not token:
+        return "Authorization token is required"
+
     # 根据 evaluate_type 获取指标 ID
-    id_resp = evalbot_client.get_evaluate_ids(EvaluateIDType.ABILITY, evaluate_type)
+    id_resp = evalbot_client.get_evaluate_ids(EvaluateIDType.ABILITY, evaluate_type, token)
     if not id_resp or not id_resp.data:
         return "Invalid evaluate type"
     # 兜底转换参数名称格式
@@ -91,7 +114,7 @@ async def model_evaluation(evaluate_type: str, params: dict[str, str]) -> Option
         new_k = k if k.startswith("{{") and k.endswith("}}") else "{{" + k + "}}"
         resolve_params[new_k] = v
     # 获取结果
-    response = evalbot_client.ability_trigger(AbilityTriggerReq(id=id_resp.data[0], params=json.dumps(resolve_params, ensure_ascii=False)))
+    response = evalbot_client.ability_trigger(AbilityTriggerReq(id=id_resp.data[0], params=json.dumps(resolve_params, ensure_ascii=False)), token)
     if not response:
         return "Failed to evaluate model"
     return response.data
@@ -104,7 +127,7 @@ def main():
         "--t",
         choices=["streamable-http", "stdio"],
         default="streamable-http",
-        help="Transport protocol to use (sse or stdio)",
+        help="Transport protocol to use (streamable-http or stdio)",
     )
     parser.add_argument(
         "--config",
