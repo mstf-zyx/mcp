@@ -18,6 +18,7 @@ if __name__ == '__main__':
         "mcp-session-id": None
     })
     session_id = session_resp.headers[session_header]
+    print(f"Session ID: {session_id}")
     headers = {
         "Content-Type": "application/json; charset=utf-8",
         "Accept": "application/json, text/event-stream",
