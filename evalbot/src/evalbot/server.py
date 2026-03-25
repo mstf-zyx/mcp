@@ -78,15 +78,14 @@ async def model_evaluation(evaluate_type: str, params: dict[str, str], ctx: Cont
 
     Args:
         evaluate_type (str): The type for evaluating model. Supported values:
-                             - "knowledge-instruction_following": Requires keys location, scene, question, reply.
-                             - "knowledge-scalable-comprehensive_key_points": Requires keys scene, question, reply.
-                             - "knowledge-authentic_and_accurate-general": Requires keys base_time, question, reply.
+                             - "knowledge-instruction_following": Requires keys location, scene, query, reply.
+                             - "knowledge-scalable-comprehensive_key_points": Requires keys scene, query, reply.
+                             - "knowledge-authentic_and_accurate-general": Requires keys base_time, query, reply.
                              - "knowledge-richness": Requires keys query, reply.
                              - "knowledge-gsb-compare": Requires keys query, domain, reply_a, reply_b, evaluation_criteria.
         params (dict[str, str]): Dictionary of  parameters for the evaluation. The allowed keys depend on `evaluate_type`:
                                  - location: The geographical location entered by the user, such as "Shenzhen xx".
                                  - scene: The scenario to which the user's input query belongs, such as "Knowledge Question - Local Life".
-                                 - question: The user input.
                                  - query: The user input.
                                  - reply: The reply of the user input, such as "It's 28 degrees today...".
                                  - base_time: Define the test verification time for the evaluation task, such as "2025-10-11".
