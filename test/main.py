@@ -11,7 +11,7 @@ if __name__ == '__main__':
         "jsonrpc": "2.0",
         "method": "session.create",
         "params": {},
-        "id": "1"
+        "id": 1
     }, headers={
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
@@ -27,10 +27,10 @@ if __name__ == '__main__':
     # initialize
     init_resp = requests.post(url, json={
         "jsonrpc": "2.0",
-        "id": "2",
+        "id": 2,
         "method": "initialize",
         "params": {
-            "protocolVersion": "1.0",
+            "protocolVersion": "2024-11-05",
             "capabilities": {},
             "clientInfo": {
                 "name": "my-client",
@@ -39,14 +39,25 @@ if __name__ == '__main__':
         }
     }, headers=headers)
     print("initialize:", init_resp.text)
-    # initialize notification
+    # initialize notification (no params needed)
     notify_resp = requests.post(url, json={
         "jsonrpc": "2.0",
-        "method": "notifications/initialized",
-        "params": {}
+        "method": "notifications/initialized"
     }, headers=headers)
     print("initialize notifications:", notify_resp.text)
     print()
+
+    # call tools/list
+    try:
+        resp = requests.post(url, json={
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/list",
+            "params": {}
+        }, headers=headers)
+        print("tools/list:", resp.text)
+    except Exception as e:
+        print("tools/list error:", e)
 
     # call data generation
     # try:
@@ -60,7 +71,7 @@ if __name__ == '__main__':
     #                 "params": {"top_n": "5"}
     #             }
     #         },
-    #         "id": "1"
+    #         "id": 4
     #     }, headers=headers)
     #     print("call data_generation", resp.content.decode('utf-8'))
     # except Exception as e:
@@ -82,7 +93,7 @@ if __name__ == '__main__':
     #                 }
     #             }
     #         },
-    #         "id": "1"
+    #         "id": 5
     #     }, headers=headers)
     #     print("call model_evaluation", resp.content.decode('utf-8'))
     # except Exception as e:
