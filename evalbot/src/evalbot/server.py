@@ -33,6 +33,7 @@ def get_token_from_context(ctx: Context) -> Optional[str]:
             auth_header = ctx.request_context.request.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
                 return auth_header[7:]  # 去掉 "Bearer " 前缀
+            return auth_header
     except Exception:
         pass
     return None
