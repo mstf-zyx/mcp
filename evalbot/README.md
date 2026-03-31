@@ -1,6 +1,6 @@
 # Evalbot MCP Server
 
-MCP Server for the Evalbot
+English | [简体中文](README_zh.md)
 
 ## Tools
 
