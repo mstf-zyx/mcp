@@ -5,6 +5,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 
+TRIGGER_SOURCE_PUBLIC_MCP = "public_mcp"
+
+
 class BaseResp(BaseModel):
     error_msg: str
     ret: int
@@ -25,6 +28,7 @@ class PluginTriggerReq(BaseModel):
     id: int
     params: dict
     quantity: int
+    trigger_source: str = TRIGGER_SOURCE_PUBLIC_MCP
 
 
 class TriggerDataEvent(str, Enum):
@@ -51,6 +55,7 @@ class AbilityTriggerReq(BaseModel):
     query: Optional[str] = ""
     eval_str: Optional[str] = ""
     creator: Optional[str] = ""
+    trigger_source: str = TRIGGER_SOURCE_PUBLIC_MCP
 
 
 class AbilityTriggerRespData(BaseModel):
